@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapleStory ARC Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ARC 符文計算器</h1>
+            <p>計算升級所需時間與 ARC 趨勢</p>
+        </header>
+
+        <section class="calculator-section">
+            <div class="table-container">
+                <table id="arcTable">
+                    <thead>
+                        <tr>
+                            <th>地區 (Symbol)</th>
+                            <th>目前等級 (Level)</th>
+                            <th>目前進度 (Exp)</th>
+                            <th>每日獲得 (Daily)</th>
+                            <th>每周獲得 (Weekly)</th>
+                            <th>下次升級 (Next Lv)</th>
+                            <th>完成滿等 (Max Lv)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <button id="addRowBtn" class="btn-secondary">+ 新增地區</button>
+        </section>
+
+        <section class="chart-section">
+            <h2>ARC 符文趨勢 (30天)</h2>
+            <div class="chart-container">
+                <canvas id="arcTrendChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
