@@ -4,7 +4,7 @@ const INITIAL_REGIONS = [
     { name: "拉契爾恩 (Lachelein)", level: 1, exp: 0, daily: 0, weekly: 0 }
 ];
 
-const MAX_LEVEL = 20;
+const MAX_LEVEL = 15;
 
 // Requirement Formula: (Level^2) + 11
 function getExpReq(level) {
