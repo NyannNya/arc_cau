@@ -23,6 +23,11 @@ function getArcStat(level) {
 document.addEventListener('DOMContentLoaded', () => {
     const tableBody = document.querySelector('#arcTable tbody');
     const addRowBtn = document.getElementById('addRowBtn');
+    const weeklyResetDaySelect = document.getElementById('weeklyResetDay');
+
+    if (weeklyResetDaySelect) {
+        weeklyResetDaySelect.addEventListener('change', calculateAll);
+    }
 
     // Initialize Chart
     const ctx = document.getElementById('arcTrendChart').getContext('2d');
@@ -148,12 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (level < 1) level = 1;
 
             // --- Calculation for Table ---
-            const rate = daily + (weekly / 7);
+            const resetDaySelect = document.getElementById('weeklyResetDay');
+            const resetDay = resetDaySelect ? parseInt(resetDaySelect.value) : 4;
             const nextLvCell = tr.querySelector('.next-lv-cell');
             const maxLvCell = tr.querySelector('.max-lv-cell');
 
             // 1. Next Level
-            let daysToNext = 0;
             const reqNext = getExpReq(level);
 
             if (level >= MAX_LEVEL) {
@@ -162,26 +167,39 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const neededNext = Math.max(0, reqNext - currentExp);
 
-                if (rate <= 0) {
+                if (daily === 0 && weekly === 0) {
                     nextLvCell.innerText = "無法升級";
                     maxLvCell.innerText = "無法升級";
                 } else {
-                    daysToNext = Math.ceil(neededNext / rate);
-                    const dateNext = new Date();
-                    dateNext.setDate(dateNext.getDate() + daysToNext);
-                    nextLvCell.innerHTML = `${daysToNext} 天<span class="result-date">${formatDate(dateNext)}</span>`;
+                    let dDateSim = new Date();
+                    let simExpNext = 0;
+                    let simDaysNext = 0;
+                    
+                    while (simExpNext < neededNext && simDaysNext < 10000) {
+                        simDaysNext++;
+                        dDateSim.setDate(dDateSim.getDate() + 1);
+                        simExpNext += daily;
+                        if (dDateSim.getDay() === resetDay) { simExpNext += weekly; }
+                    }
+                    nextLvCell.innerHTML = `${simDaysNext} 天<span class="result-date">${formatDate(dDateSim)}</span>`;
 
                     // 2. Max Level (20)
-                    // Calculate total exp needed from current state to max
-                    // (Req for current level - current exp) + Sum(Req for next levels up to 19)
                     let totalNeeded = neededNext;
                     for (let l = level + 1; l < MAX_LEVEL; l++) {
                         totalNeeded += getExpReq(l);
                     }
-                    const daysToMax = Math.ceil(totalNeeded / rate);
-                    const dateMax = new Date();
-                    dateMax.setDate(dateMax.getDate() + daysToMax);
-                    maxLvCell.innerHTML = `${daysToMax} 天<span class="result-date">${formatDate(dateMax)}</span>`;
+                    
+                    let simExpMax = 0;
+                    let simDaysMax = 0;
+                    let dDateMax = new Date();
+                    
+                    while (simExpMax < totalNeeded && simDaysMax < 10000) {
+                        simDaysMax++;
+                        dDateMax.setDate(dDateMax.getDate() + 1);
+                        simExpMax += daily;
+                        if (dDateMax.getDay() === resetDay) { simExpMax += weekly; }
+                    }
+                    maxLvCell.innerHTML = `${simDaysMax} 天<span class="result-date">${formatDate(dDateMax)}</span>`;
                 }
             }
 
@@ -197,11 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateChart(symbols) {
+        const resetDaySelect = document.getElementById('weeklyResetDay');
+        const resetDay = resetDaySelect ? parseInt(resetDaySelect.value) : 4;
+        
         // Simulate next 30 days
         const days = 30;
         const labels = [];
         const dataPoints = [];
         const now = new Date();
+
+        const simExpGains = symbols.map(() => 0);
 
         for (let d = 0; d <= days; d++) {
             const chartDate = new Date(now);
@@ -210,8 +233,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let totalArc = 0;
 
+            if (d > 0) {
+                const isResetDay = (chartDate.getDay() === resetDay);
+                for(let i=0; i<symbols.length; i++) {
+                    simExpGains[i] += symbols[i].daily;
+                    if (isResetDay) {
+                        simExpGains[i] += symbols[i].weekly;
+                    }
+                }
+            }
+
             // Calculate state for each symbol at day d
-            symbols.forEach(sym => {
+            symbols.forEach((sym, index) => {
                 // Clone state to simulate
                 let simLevel = sym.level;
 
@@ -220,12 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Total exp gained by day d
-                // Using simple linear daily average: d * (daily + weekly/7)
-                // This is simpler for "Trend" than stepping weekly
-                const totalGain = d * (sym.daily + (sym.weekly / 7));
-
-                let simExp = sym.exp + totalGain;
+                let simExp = sym.exp + simExpGains[index];
 
                 // Simulate Level Ups
                 while (simLevel < MAX_LEVEL) {
